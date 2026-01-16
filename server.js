@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -6,7 +7,7 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -47,7 +48,7 @@ app.post('/api/subscribe', async (req, res) => {
 
         // Send confirmation email
         const mailOptions = {
-            from: '"TokenFlow" <hello@tokenflow.xyz>',
+            from: process.env.EMAIL_FROM || '"TokenFlow" <hello@tokenflow.xyz>',
             to: email,
             subject: "Welcome to the TokenFlow Waiting List! 🚀",
             html: `
@@ -65,7 +66,9 @@ app.post('/api/subscribe', async (req, res) => {
         try {
             const info = await transporter.sendMail(mailOptions);
             console.log('Message sent: %s', info.messageId);
-            console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+            if (nodemailer.getTestMessageUrl(info)) {
+                console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+            }
             res.status(201).json({ message: 'Subscribed successfully! Confirmation email sent.' });
         } catch (mailErr) {
             console.error('Mail error:', mailErr);
@@ -74,26 +77,44 @@ app.post('/api/subscribe', async (req, res) => {
     });
 });
 
-// Setup Ethereal Transporter and then start server
-nodemailer.createTestAccount((err, account) => {
-    if (err) {
-        console.error('Failed to create a testing account. ' + err.message);
-        return;
+// Setup Transporter
+async function setupTransporter() {
+    if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        // PRODUCTION: Use real SMTP settings from environment variables
+        transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST,
+            port: process.env.EMAIL_PORT || 587,
+            secure: process.env.EMAIL_SECURE === 'true',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+        console.log('Production email transporter ready');
+    } else {
+        // DEVELOPMENT: Fallback to Ethereal Testing
+        console.log('No production email credentials found. Setting up testing account...');
+        nodemailer.createTestAccount((err, account) => {
+            if (err) {
+                console.error('Failed to create a testing account. ' + err.message);
+                return;
+            }
+            transporter = nodemailer.createTransport({
+                host: account.smtp.host,
+                port: account.smtp.port,
+                secure: account.smtp.secure,
+                auth: {
+                    user: account.user,
+                    pass: account.pass
+                }
+            });
+            console.log('Test email account created: ' + account.user);
+        });
     }
+}
 
-    transporter = nodemailer.createTransport({
-        host: account.smtp.host,
-        port: account.smtp.port,
-        secure: account.smtp.secure,
-        auth: {
-            user: account.user,
-            pass: account.pass
-        }
-    });
-
-    console.log('Test email account created: ' + account.user);
-
+setupTransporter().then(() => {
     app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
+        console.log(`Server running on port ${PORT}`);
     });
 });
