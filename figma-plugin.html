@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TokenFlow - Figma Plugin</title>
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-base: #1e1e1e;
+      --bg-card: #2d2d2d;
+      --bg-input: #3d3d3d;
+      --bg-hover: #404040;
+      --border: #404040;
+      --border-light: #505050;
+      --text: #ffffff;
+      --text-dim: #b3b3b3;
+      --text-muted: #888888;
+      --accent: #0d99ff;
+      --accent-light: #4db8ff;
+      --accent-bg: rgba(13, 153, 255, 0.1);
+      --success: #1bc47d;
+      --warning: #f7b500;
+      --error: #f24822;
+      --purple: #a259ff;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --mono: 'SF Mono', 'Fira Code', 'Monaco', monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-base);
+      color: var(--text);
+      font-size: 11px;
+      line-height: 1.4;
+      min-height: 100vh;
+    }
+
+    /* Main Plugin Container */
+    .plugin-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .plugin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .plugin-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .plugin-logo {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .plugin-logo svg {
+      width: 14px;
+      height: 14px;
+      fill: white;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tab:hover {
+      color: var(--text-dim);
+      background: var(--bg-hover);
+    }
+
+    .tab.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    /* Color Grid */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+
+    .color-swatch {
+      aspect-ratio: 1;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.15s;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.1);
+      z-index: 1;
+    }
+
+    /* Token List */
+    .token-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .token-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: var(--bg-input);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .token-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .token-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .token-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .token-name {
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .token-value {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+
+    /* Footer Buttons */
+    .footer {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-light);
+    }
+
+    .btn-secondary {
+      background: var(--bg-input);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-light);
+    }
+
+    .btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ===== EXPORT HUB MODAL ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--bg-base);
+      border-radius: 12px;
+      width: 95%;
+      max-width: 720px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      transform: scale(0.95) translateY(10px);
+      transition: transform 0.25s ease;
+    }
+
+    .modal-overlay.active .modal {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-title-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-title-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke: white;
+      fill: none;
+    }
+
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      background: var(--bg-input);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .modal-close:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .modal-close svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    /* Format Cards */
+    .format-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .format-card {
+      padding: 14px 12px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .format-card:hover {
+      border-color: var(--border-light);
+      background: var(--bg-hover);
+    }
+
+    .format-card.active {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .format-icon {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 10px;
+      background: var(--bg-input);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .format-card.active .format-icon {
+      background: var(--accent);
+      color: white;
+    }
+
+    .format-card[data-format="css"] .format-icon { color: #264de4; }
+    .format-card[data-format="scss"] .format-icon { color: #cf649a; }
+    .format-card[data-format="json"] .format-icon { color: #f7b500; }
+    .format-card[data-format="ts"] .format-icon { color: #3178c6; }
+
+    .format-card.active .format-icon { color: white; }
+
+    .format-name {
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .format-ext {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Export Options */
+    .export-options {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .option-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .option-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .option-buttons {
+      display: flex;
+      gap: 4px;
+    }
+
+    .option-btn {
+      padding: 6px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .option-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .option-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .option-select {
+      padding: 6px 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 10px;
+      color: var(--text);
+      cursor: pointer;
+      min-width: 120px;
+    }
+
+    .option-select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Code Preview */
+    .code-preview {
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-filename {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    .code-stats {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .code-content {
+      padding: 16px;
+      max-height: 280px;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.6;
+      color: #e0e0e0;
+      white-space: pre;
+      tab-size: 2;
+    }
+
+    /* Syntax Highlighting */
+    .code-content .comment { color: #6a9955; }
+    .code-content .property { color: #9cdcfe; }
+    .code-content .value { color: #ce9178; }
+    .code-content .string { color: #ce9178; }
+    .code-content .number { color: #b5cea8; }
+    .code-content .keyword { color: #569cd6; }
+    .code-content .type { color: #4ec9b0; }
+    .code-content .variable { color: #dcdcaa; }
+    .code-content .punctuation { color: #d4d4d4; }
+
+    /* Modal Footer */
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .token-count {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .token-count strong {
+      color: var(--text);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .modal-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .modal-btn-copy {
+      background: var(--bg-input);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .modal-btn-copy:hover {
+      background: var(--bg-hover);
+    }
+
+    .modal-btn-copy.copied {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .modal-btn-download {
+      background: var(--accent);
+      color: white;
+    }
+
+    .modal-btn-download:hover {
+      background: var(--accent-light);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 2000;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      border-color: var(--success);
+      background: rgba(27, 196, 125, 0.1);
+    }
+
+    .toast svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .toast.success svg {
+      stroke: var(--success);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .format-cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .export-options {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .modal-footer {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .modal-actions {
+        width: 100%;
+      }
+
+      .modal-btn {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Main Plugin UI -->
+  <div class="plugin-container">
+    <header class="plugin-header">
+      <div class="plugin-title">
+        <div class="plugin-logo">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        TokenFlow
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="primitives">Primitives</button>
+      <button class="tab" data-tab="semantics">Semantics</button>
+      <button class="tab" data-tab="variables">Variables</button>
+    </div>
+
+    <div class="content">
+      <div class="section">
+        <div class="section-title">Color Palette</div>
+        <div class="color-grid" id="colorGrid"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Tokens (12)</div>
+        <div class="token-list" id="tokenList"></div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <button class="btn btn-secondary" id="generateBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Generate
+      </button>
+      <button class="btn btn-primary" id="exportBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+    </footer>
+  </div>
+
+  <!-- Export Hub Modal -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal">
+      <header class="modal-header">
+        <div class="modal-title">
+          <div class="modal-title-icon">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          Export Hub
+        </div>
+        <button class="modal-close" id="closeModal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <!-- Format Selection -->
+        <div class="format-cards">
+          <div class="format-card active" data-format="css">
+            <div class="format-icon">CSS</div>
+            <div class="format-name">CSS Variables</div>
+            <div class="format-ext">.css</div>
+          </div>
+          <div class="format-card" data-format="scss">
+            <div class="format-icon">SCSS</div>
+            <div class="format-name">SCSS Variables</div>
+            <div class="format-ext">.scss</div>
+          </div>
+          <div class="format-card" data-format="json">
+            <div class="format-icon">{ }</div>
+            <div class="format-name">JSON</div>
+            <div class="format-ext">.json</div>
+          </div>
+          <div class="format-card" data-format="ts">
+            <div class="format-icon">TS</div>
+            <div class="format-name">TypeScript</div>
+            <div class="format-ext">.ts</div>
+          </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="export-options">
+          <div class="option-group">
+            <div class="option-label">Include</div>
+            <div class="option-buttons" id="includeOptions">
+              <button class="option-btn" data-value="primitive">Primitive</button>
+              <button class="option-btn" data-value="semantic">Semantic</button>
+              <button class="option-btn active" data-value="both">Both</button>
+            </div>
+          </div>
+
+          <div class="option-group">
+            <div class="option-label">Resolve Aliases</div>
+            <div class="option-buttons" id="resolveOptions">
+              <button class="option-btn active" data-value="on">On</button>
+              <button class="option-btn" data-value="off">Off</button>
+            </div>
+          </div>
+
+          <div class="option-group">
+            <div class="option-label">Library</div>
+            <select class="option-select" id="librarySelect">
+              <option value="all">All Libraries</option>
+              <option value="brand" selected>Brand Tokens</option>
+              <option value="semantic">Semantic Tokens</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Code Preview -->
+        <div class="code-preview">
+          <div class="code-header">
+            <span class="code-filename" id="codeFilename">tokens.css</span>
+            <span class="code-stats" id="codeStats">24 tokens</span>
+          </div>
+          <div class="code-content" id="codeContent"></div>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <div class="token-count">
+          Exporting <strong id="tokenCountNum">24</strong> tokens
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-copy" id="copyBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            <span>Copy</span>
+          </button>
+          <button class="modal-btn modal-btn-download" id="downloadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toastMessage">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // ============================================
+    // TOKEN FLOW - EXPORT HUB
+    // Complete Figma Plugin Export System
+    // ============================================
+
+    // ===== TOKEN STATE MANAGEMENT =====
+    const TokenStore = {
+      // Sample token data structure (in real plugin, this comes from Figma)
+      primitives: {
+        colors: {
+          blue: {
+            50: '#eff6ff',
+            100: '#dbeafe',
+            200: '#bfdbfe',
+            300: '#93c5fd',
+            400: '#60a5fa',
+            500: '#3b82f6',
+            600: '#2563eb',
+            700: '#1d4ed8',
+            800: '#1e40af',
+            900: '#1e3a8a'
+          },
+          gray: {
+            50: '#f9fafb',
+            100: '#f3f4f6',
+            200: '#e5e7eb',
+            300: '#d1d5db',
+            400: '#9ca3af',
+            500: '#6b7280',
+            600: '#4b5563',
+            700: '#374151',
+            800: '#1f2937',
+            900: '#111827'
+          },
+          green: {
+            50: '#f0fdf4',
+            100: '#dcfce7',
+            200: '#bbf7d0',
+            300: '#86efac',
+            400: '#4ade80',
+            500: '#22c55e',
+            600: '#16a34a',
+            700: '#15803d',
+            800: '#166534',
+            900: '#14532d'
+          },
+          red: {
+            50: '#fef2f2',
+            100: '#fee2e2',
+            200: '#fecaca',
+            300: '#fca5a5',
+            400: '#f87171',
+            500: '#ef4444',
+            600: '#dc2626',
+            700: '#b91c1c',
+            800: '#991b1b',
+            900: '#7f1d1d'
+          }
+        },
+        spacing: {
+          0: '0px',
+          1: '4px',
+          2: '8px',
+          3: '12px',
+          4: '16px',
+          5: '20px',
+          6: '24px',
+          8: '32px',
+          10: '40px',
+          12: '48px'
+        },
+        radius: {
+          none: '0px',
+          sm: '4px',
+          md: '8px',
+          lg: '12px',
+          xl: '16px',
+          full: '9999px'
+        }
+      },
+      semantics: {
+        text: {
+          primary: '{colors.gray.900}',
+          secondary: '{colors.gray.600}',
+          muted: '{colors.gray.400}',
+          inverse: '{colors.gray.50}',
+          brand: '{colors.blue.600}',
+          success: '{colors.green.600}',
+          error: '{colors.red.600}'
+        },
+        bg: {
+          primary: '{colors.gray.50}',
+          secondary: '{colors.gray.100}',
+          tertiary: '{colors.gray.200}',
+          inverse: '{colors.gray.900}',
+          brand: '{colors.blue.500}',
+          success: '{colors.green.500}',
+          error: '{colors.red.500}'
+        },
+        border: {
+          default: '{colors.gray.200}',
+          muted: '{colors.gray.100}',
+          strong: '{colors.gray.300}',
+          brand: '{colors.blue.500}'
+        }
+      }
+    };
+
+    // ===== UTILITY FUNCTIONS =====
+
+    // Convert token path to CSS-friendly name
+    function tokenPathToCSS(path, isSemanticPrefix = false) {
+      // Remove 'colors/' prefix for cleaner names
+      let cleanPath = path.replace(/^colors\//, '');
+      
+      // For semantic tokens, simplify the prefix
+      if (isSemanticPrefix) {
+        cleanPath = path;
+      }
+      
+      // Convert to CSS variable format
+      return '--' + cleanPath.replace(/\//g, '-').replace(/\./g, '-').toLowerCase();
+    }
+
+    // Resolve alias reference to actual value
+    function resolveAlias(value, primitives) {
+      if (typeof value !== 'string' || !value.startsWith('{')) {
+        return value;
+      }
+      
+      // Extract path from {path.to.value}
+      const path = value.slice(1, -1);
+      const parts = path.split('.');
+      
+      let current = primitives;
+      for (const part of parts) {
+        if (current && current[part] !== undefined) {
+          current = current[part];
+        } else {
+          return value; // Cannot resolve, return as-is
+        }
+      }
+      
+      return current;
+    }
+
+    // Flatten nested token object to flat key-value pairs
+    function flattenTokens(obj, prefix = '', result = {}) {
+      for (const key in obj) {
+        const newKey = prefix ? `${prefix}/${key}` : key;
+        const value = obj[key];
+        
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          flattenTokens(value, newKey, result);
+        } else {
+          result[newKey] = value;
+        }
+      }
+      return result;
+    }
+
+    // Build canonical token object based on options
+    function buildCanonicalTokens(options = {}) {
+      const { include = 'both', resolveAliases = true, library = 'all' } = options;
+      
+      const tokens = {
+        primitive: {},
+        semantic: {}
+      };
+      
+      // Add primitive tokens
+      if (include === 'primitive' || include === 'both') {
+        tokens.primitive = flattenTokens(TokenStore.primitives);
+      }
+      
+      // Add semantic tokens
+      if (include === 'semantic' || include === 'both') {
+        const flatSemantics = flattenTokens(TokenStore.semantics);
+        
+        for (const [key, value] of Object.entries(flatSemantics)) {
+          if (resolveAliases) {
+            tokens.semantic[key] = resolveAlias(value, TokenStore.primitives);
+          } else {
+            tokens.semantic[key] = value;
+          }
+        }
+      }
+      
+      return tokens;
+    }
+
+    // ===== EXPORT RENDERERS =====
+
+    // CSS Variables Renderer
+    function toCSSVariables(tokens, options = {}) {
+      const lines = [];
+      lines.push('/* TokenFlow - CSS Variables */');
+      lines.push('/* Generated: ' + new Date().toISOString().split('T')[0] + ' */');
+      lines.push('');
+      lines.push(':root {');
+      
+      // Primitive tokens
+      if (Object.keys(tokens.primitive).length > 0) {
+        lines.push('  /* Primitive Tokens */');
+        for (const [path, value] of Object.entries(tokens.primitive)) {
+          const cssName = tokenPathToCSS(path);
+          lines.push(`  ${cssName}: ${value};`);
+        }
+        lines.push('');
+      }
+      
+      // Semantic tokens
+      if (Object.keys(tokens.semantic).length > 0) {
+        lines.push('  /* Semantic Tokens */');
+        for (const [path, value] of Object.entries(tokens.semantic)) {
+          const cssName = tokenPathToCSS(path, true);
+          
+          // Check if value is an alias reference
+          if (typeof value === 'string' && value.startsWith('{')) {
+            // Convert alias to var() reference
+            const aliasPath = value.slice(1, -1);
+            const varName = tokenPathToCSS(aliasPath);
+            lines.push(`  ${cssName}: var(${varName});`);
+          } else {
+            lines.push(`  ${cssName}: ${value};`);
+          }
+        }
+      }
+      
+      lines.push('}');
+      
+      return lines.join('\n');
+    }
+
+    // SCSS Variables Renderer
+    function toSCSS(tokens, options = {}) {
+      const lines = [];
+      lines.push('// TokenFlow - SCSS Variables');
+      lines.push('// Generated: ' + new Date().toISOString().split('T')[0]);
+      lines.push('');
+      
+      // Primitive tokens
+      if (Object.keys(tokens.primitive).length > 0) {
+        lines.push('// Primitive Tokens');
+        for (const [path, value] of Object.entries(tokens.primitive)) {
+          const scssName = '$' + path.replace(/\//g, '-').replace(/\./g, '-').toLowerCase();
+          lines.push(`${scssName}: ${value};`);
+        }
+        lines.push('');
+      }
+      
+      // Semantic tokens
+      if (Object.keys(tokens.semantic).length > 0) {
+        lines.push('// Semantic Tokens');
+        for (const [path, value] of Object.entries(tokens.semantic)) {
+          const scssName = '$' + path.replace(/\//g, '-').replace(/\./g, '-').toLowerCase();
+          
+          // Check if value is an alias reference
+          if (typeof value === 'string' && value.startsWith('{')) {
+            const aliasPath = value.slice(1, -1);
+            const aliasVar = '$' + aliasPath.replace(/\./g, '-').toLowerCase();
+            lines.push(`${scssName}: ${aliasVar};`);
+          } else {
+            lines.push(`${scssName}: ${value};`);
+          }
+        }
+      }
+      
+      // Generate CSS variables mixin
+      lines.push('');
+      lines.push('// CSS Variables Mixin');
+      lines.push('@mixin token-variables {');
+      
+      for (const [path, value] of Object.entries(tokens.primitive)) {
+        const cssName = tokenPathToCSS(path);
+        const scssVar = '$' + path.replace(/\//g, '-').replace(/\./g, '-').toLowerCase();
+        lines.push(`  ${cssName}: #{${scssVar}};`);
+      }
+      
+      for (const [path, value] of Object.entries(tokens.semantic)) {
+        const cssName = tokenPathToCSS(path, true);
+        const scssVar = '$' + path.replace(/\//g, '-').replace(/\./g, '-').toLowerCase();
+        lines.push(`  ${cssName}: #{${scssVar}};`);
+      }
+      
+      lines.push('}');
+      
+      return lines.join('\n');
+    }
+
+    // JSON Renderer
+    function toJSON(tokens, options = {}) {
+      const output = {
+        $schema: 'https://tokenflow.design/schema/tokens.json',
+        $metadata: {
+          generator: 'TokenFlow',
+          version: '1.0.0',
+          generated: new Date().toISOString()
+        }
+      };
+      
+      // Build structured output
+      if (Object.keys(tokens.primitive).length > 0) {
+        output.primitive = {};
+        for (const [path, value] of Object.entries(tokens.primitive)) {
+          const parts = path.split('/');
+          let current = output.primitive;
+          
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!current[parts[i]]) {
+              current[parts[i]] = {};
+            }
+            current = current[parts[i]];
+          }
+          
+          current[parts[parts.length - 1]] = {
+            $value: value,
+            $type: detectTokenType(value)
+          };
+        }
+      }
+      
+      if (Object.keys(tokens.semantic).length > 0) {
+        output.semantic = {};
+        for (const [path, value] of Object.entries(tokens.semantic)) {
+          const parts = path.split('/');
+          let current = output.semantic;
+          
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!current[parts[i]]) {
+              current[parts[i]] = {};
+            }
+            current = current[parts[i]];
+          }
+          
+          const tokenData = {
+            $value: value,
+            $type: detectTokenType(value)
+          };
+          
+          // Add alias reference if applicable
+          if (typeof value === 'string' && value.startsWith('{')) {
+            tokenData.$alias = value.slice(1, -1);
+          }
+          
+          current[parts[parts.length - 1]] = tokenData;
+        }
+      }
+      
+      return JSON.stringify(output, null, 2);
+    }
+
+    // TypeScript Renderer
+    function toTypeScript(tokens, options = {}) {
+      const lines = [];
+      lines.push('/**');
+      lines.push(' * TokenFlow - Design Tokens');
+      lines.push(' * Generated: ' + new Date().toISOString().split('T')[0]);
+      lines.push(' * @generated');
+      lines.push(' */');
+      lines.push('');
+      
+      // Primitive tokens
+      if (Object.keys(tokens.primitive).length > 0) {
+        lines.push('/** Primitive Tokens */');
+        lines.push('export const primitiveTokens = {');
+        
+        for (const [path, value] of Object.entries(tokens.primitive)) {
+          const key = path.replace(/\//g, '_').replace(/-/g, '_').toUpperCase();
+          lines.push(`  ${key}: '${value}',`);
+        }
+        
+        lines.push('} as const;');
+        lines.push('');
+      }
+      
+      // Semantic tokens
+      if (Object.keys(tokens.semantic).length > 0) {
+        lines.push('/** Semantic Tokens */');
+        lines.push('export const semanticTokens = {');
+        
+        for (const [path, value] of Object.entries(tokens.semantic)) {
+          const key = path.replace(/\//g, '_').replace(/-/g, '_').toUpperCase();
+          
+          if (typeof value === 'string' && value.startsWith('{')) {
+            // Reference to primitive
+            const aliasPath = value.slice(1, -1);
+            const aliasKey = aliasPath.replace(/\./g, '_').replace(/-/g, '_').toUpperCase();
+            lines.push(`  ${key}: primitiveTokens.${aliasKey},`);
+          } else {
+            lines.push(`  ${key}: '${value}',`);
+          }
+        }
+        
+        lines.push('} as const;');
+        lines.push('');
+      }
+      
+      // Combined tokens object
+      lines.push('/** All Tokens */');
+      lines.push('export const tokens = {');
+      lines.push('  ...primitiveTokens,');
+      lines.push('  ...semanticTokens,');
+      lines.push('} as const;');
+      lines.push('');
+      
+      // TypeScript types
+      lines.push('/** Token Type Definitions */');
+      lines.push('export type PrimitiveToken = keyof typeof primitiveTokens;');
+      lines.push('export type SemanticToken = keyof typeof semanticTokens;');
+      lines.push('export type Token = keyof typeof tokens;');
+      lines.push('');
+      
+      // CSS variable helper
+      lines.push('/** CSS Variable Helper */');
+      lines.push('export function cssVar(token: Token): string {');
+      lines.push("  const name = token.toLowerCase().replace(/_/g, '-');");
+      lines.push('  return `var(--${name})`;');
+      lines.push('}');
+      
+      return lines.join('\n');
+    }
+
+    // Detect token type from value
+    function detectTokenType(value) {
+      if (typeof value !== 'string') return 'unknown';
+      
+      if (value.startsWith('#') || value.startsWith('rgb') || value.startsWith('hsl')) {
+        return 'color';
+      }
+      if (value.endsWith('px') || value.endsWith('rem') || value.endsWith('em')) {
+        return 'dimension';
+      }
+      if (value.startsWith('{')) {
+        return 'alias';
+      }
+      return 'string';
+    }
+
+    // ===== UI STATE =====
+    const ExportState = {
+      format: 'css',
+      include: 'both',
+      resolveAliases: true,
+      library: 'brand'
+    };
+
+    // ===== DOM ELEMENTS =====
+    const elements = {
+      modal: document.getElementById('exportModal'),
+      closeBtn: document.getElementById('closeModal'),
+      exportBtn: document.getElementById('exportBtn'),
+      formatCards: document.querySelectorAll('.format-card'),
+      includeOptions: document.getElementById('includeOptions'),
+      resolveOptions: document.getElementById('resolveOptions'),
+      librarySelect: document.getElementById('librarySelect'),
+      codeContent: document.getElementById('codeContent'),
+      codeFilename: document.getElementById('codeFilename'),
+      codeStats: document.getElementById('codeStats'),
+      tokenCountNum: document.getElementById('tokenCountNum'),
+      copyBtn: document.getElementById('copyBtn'),
+      downloadBtn: document.getElementById('downloadBtn'),
+      toast: document.getElementById('toast'),
+      toastMessage: document.getElementById('toastMessage'),
+      colorGrid: document.getElementById('colorGrid'),
+      tokenList: document.getElementById('tokenList')
+    };
+
+    // ===== MODAL FUNCTIONS =====
+
+    function openModal() {
+      elements.modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      updatePreview();
+    }
+
+    function closeModal() {
+      elements.modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function updatePreview() {
+      const tokens = buildCanonicalTokens({
+        include: ExportState.include,
+        resolveAliases: ExportState.resolveAliases,
+        library: ExportState.library
+      });
+      
+      // Count tokens
+      const tokenCount = Object.keys(tokens.primitive).length + Object.keys(tokens.semantic).length;
+      elements.tokenCountNum.textContent = tokenCount;
+      elements.codeStats.textContent = `${tokenCount} tokens`;
+      
+      // Generate code based on format
+      let code = '';
+      let filename = 'tokens';
+      
+      switch (ExportState.format) {
+        case 'css':
+          code = toCSSVariables(tokens, { resolveAliases: ExportState.resolveAliases });
+          filename = 'tokens.css';
+          break;
+        case 'scss':
+          code = toSCSS(tokens, { resolveAliases: ExportState.resolveAliases });
+          filename = 'tokens.scss';
+          break;
+        case 'json':
+          code = toJSON(tokens, { resolveAliases: ExportState.resolveAliases });
+          filename = 'tokens.json';
+          break;
+        case 'ts':
+          code = toTypeScript(tokens, { resolveAliases: ExportState.resolveAliases });
+          filename = 'tokens.ts';
+          break;
+      }
+      
+      elements.codeFilename.textContent = filename;
+      elements.codeContent.textContent = code;
+    }
+
+    // Get current export code
+    function getCurrentCode() {
+      return elements.codeContent.textContent;
+    }
+
+    // Get current filename
+    function getCurrentFilename() {
+      return elements.codeFilename.textContent;
+    }
+
+    // Copy to clipboard with fallback
+    async function copyToClipboard() {
+      const code = getCurrentCode();
+      
+      try {
+        await navigator.clipboard.writeText(code);
+        showCopySuccess();
+      } catch (err) {
+        // Fallback for older browsers or permission issues
+        const textarea = document.createElement('textarea');
+        textarea.value = code;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+          document.execCommand('copy');
+          showCopySuccess();
+        } catch (e) {
+          showToast('Failed to copy. Please select and copy manually.', 'error');
+        }
+        
+        document.body.removeChild(textarea);
+      }
+    }
+
+    function showCopySuccess() {
+      elements.copyBtn.classList.add('copied');
+      elements.copyBtn.querySelector('span').textContent = 'Copied!';
+      showToast('Copied to clipboard!', 'success');
+      
+      setTimeout(() => {
+        elements.copyBtn.classList.remove('copied');
+        elements.copyBtn.querySelector('span').textContent = 'Copy';
+      }, 2000);
+    }
+
+    // Download file using Blob
+    function downloadFile() {
+      const code = getCurrentCode();
+      const filename = getCurrentFilename();
+      
+      // Determine MIME type
+      let mimeType = 'text/plain';
+      if (filename.endsWith('.css')) mimeType = 'text/css';
+      else if (filename.endsWith('.scss')) mimeType = 'text/x-scss';
+      else if (filename.endsWith('.json')) mimeType = 'application/json';
+      else if (filename.endsWith('.ts')) mimeType = 'text/typescript';
+      
+      const blob = new Blob([code], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+      
+      showToast(`Downloaded ${filename}`, 'success');
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+      elements.toastMessage.textContent = message;
+      elements.toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        elements.toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // ===== EVENT LISTENERS =====
+
+    // Export button opens modal
+    elements.exportBtn.addEventListener('click', openModal);
+
+    // Close modal
+    elements.closeBtn.addEventListener('click', closeModal);
+
+    // Close on backdrop click
+    elements.modal.addEventListener('click', (e) => {
+      if (e.target === elements.modal) {
+        closeModal();
+      }
+    });
+
+    // Close on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && elements.modal.classList.contains('active')) {
+        closeModal();
+      }
+    });
+
+    // Format card selection
+    elements.formatCards.forEach(card => {
+      card.addEventListener('click', () => {
+        elements.formatCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        ExportState.format = card.dataset.format;
+        
+        // Update default resolve aliases based on format
+        if (ExportState.format === 'json') {
+          ExportState.resolveAliases = false;
+          updateResolveButtons();
+        }
+        
+        updatePreview();
+      });
+    });
+
+    // Include options
+    elements.includeOptions.querySelectorAll('.option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        elements.includeOptions.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        ExportState.include = btn.dataset.value;
+        updatePreview();
+      });
+    });
+
+    // Resolve aliases options
+    elements.resolveOptions.querySelectorAll('.option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        elements.resolveOptions.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        ExportState.resolveAliases = btn.dataset.value === 'on';
+        updatePreview();
+      });
+    });
+
+    function updateResolveButtons() {
+      elements.resolveOptions.querySelectorAll('.option-btn').forEach(btn => {
+        btn.classList.toggle('active', 
+          (btn.dataset.value === 'on') === ExportState.resolveAliases
+        );
+      });
+    }
+
+    // Library selection
+    elements.librarySelect.addEventListener('change', (e) => {
+      ExportState.library = e.target.value;
+      updatePreview();
+    });
+
+    // Copy button
+    elements.copyBtn.addEventListener('click', copyToClipboard);
+
+    // Download button
+    elements.downloadBtn.addEventListener('click', downloadFile);
+
+    // ===== INITIALIZE UI =====
+
+    function initializePluginUI() {
+      // Generate color grid
+      const colors = TokenStore.primitives.colors.blue;
+      let gridHTML = '';
+      
+      for (const [shade, color] of Object.entries(colors)) {
+        gridHTML += `<div class="color-swatch" style="background: ${color}" title="blue-${shade}"></div>`;
+      }
+      
+      elements.colorGrid.innerHTML = gridHTML;
+      
+      // Generate token list
+      const semanticTokens = flattenTokens(TokenStore.semantics);
+      let listHTML = '';
+      
+      let count = 0;
+      for (const [path, value] of Object.entries(semanticTokens)) {
+        if (count >= 6) break;
+        const resolved = resolveAlias(value, TokenStore.primitives);
+        const isColor = resolved.startsWith('#');
+        
+        listHTML += `
+          <div class="token-item">
+            ${isColor ? `<div class="token-color" style="background: ${resolved}"></div>` : ''}
+            <div class="token-info">
+              <div class="token-name">${path.replace(/\//g, '.')}</div>
+              <div class="token-value">${value}</div>
+            </div>
+          </div>
+        `;
+        count++;
+      }
+      
+      elements.tokenList.innerHTML = listHTML;
+    }
+
+    // Initialize
+    initializePluginUI();
+
+    // Tab switching (for demo)
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
