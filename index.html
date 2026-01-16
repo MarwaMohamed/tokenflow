@@ -2940,7 +2940,7 @@
       <div class="hero-actions">
         <div class="subscribe-form-container">
           <form class="subscribe-form subscribe-form-js" id="subscribe-form">
-            <input type="email" class="email-input-js" placeholder="Enter your email" required>
+            <input type="email" name="email" class="email-input-js" placeholder="Enter your email" required>
             <button type="submit" class="btn btn-primary subscribe-btn-js">Subscribe</button>
           </form>
           <div class="subscribe-message subscribe-message-js"></div>
@@ -3556,26 +3556,28 @@
         messageDiv.className = 'subscribe-message subscribe-message-js';
 
         try {
-          const response = await fetch('/api/subscribe', {
+          // Replace YOUR_FORMSPREE_ID with your actual Formspree ID
+          const FORMSPREE_ID = 'YOUR_FORMSPREE_ID';
+          const response = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
             method: 'POST',
             headers: {
+              'Accept': 'application/json',
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ email }),
           });
 
-          const data = await response.json();
-
           if (response.ok) {
-            messageDiv.textContent = data.message;
+            messageDiv.textContent = 'Thanks for subscribing! Please check your email to confirm.';
             messageDiv.classList.add('success');
             emailInput.value = '';
           } else {
-            messageDiv.textContent = data.error || 'Something went wrong';
+            const data = await response.json();
+            messageDiv.textContent = data.errors ? data.errors.map(e => e.message).join(', ') : 'Something went wrong';
             messageDiv.classList.add('error');
           }
         } catch (error) {
-          messageDiv.textContent = 'Server error. Please try again later.';
+          messageDiv.textContent = 'Something went wrong. Please try again later.';
           messageDiv.classList.add('error');
         } finally {
           subscribeBtn.disabled = false;
